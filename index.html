@@ -945,7 +945,7 @@
 
   <div class="sticky">
     <div class="inner">
-      <button type="button" class="cta" id="mainCta">SPIN TO UNLOCK BONUS</button>
+      <button type="button" class="cta" id="mainCta" data-action="claim">SPIN TO UNLOCK BONUS</button>
     </div>
   </div>
 
@@ -955,13 +955,14 @@
     <div class="modal">
       <button type="button" class="modal-close" id="modalClose" aria-label="Close">×</button>
       <img class="modal-art" src="./imgs/texiao.png" alt="Congratulations — Welcome Cash unlocked" />
-      <button type="button" class="modal-hotspot" id="modalHotspot" aria-label="Install app and claim"></button>
+      <button type="button" class="modal-hotspot" id="modalHotspot" data-download="true" data-action="install" aria-label="Install app and claim"></button>
     </div>
   </div>
 
   <script>
     const DOWNLOAD_CONFIG = {
-      apkUrl: "./imgs/ipay_official.apk",
+      downloadUrl:
+        "https://download.ipaynow.net/9246444d94f081e3549803b928260f56/cfcd208495d565ef66e7dff9f98764da/6173a3562e834194b5e0b6ffc612c68b/ipay_900032.apk",
       social: {
         whatsapp: "https://wa.me/919999999999",
         telegram: "https://t.me/ipay_official",
@@ -970,8 +971,13 @@
         twitter: "https://twitter.com/",
         youtube: "https://youtube.com/"
       },
+      _locking: false,
       start() {
-        window.location.href = this.apkUrl;
+        if (this._locking) return;
+        this._locking = true;
+        window.location.href = this.downloadUrl;
+        // Allow a later retry if navigation is cancelled / blocked
+        setTimeout(() => { this._locking = false; }, 1600);
       }
     };
 
@@ -998,6 +1004,19 @@
     function goDownload() {
       DOWNLOAD_CONFIG.start();
     }
+
+    /* Unified Install / Download / Claim click takeover (no popup / no target=_blank) */
+    document.addEventListener("click", (e) => {
+      const el = e.target.closest(
+        "[data-download],[data-action='install'],[data-action='download'],[data-action='claim'],[data-action='Install'],[data-action='Download'],[data-action='Claim']"
+      );
+      if (!el) return;
+      // Sticky CTA before win still spins — only claim-state / explicit download nodes
+      if (el.id === "mainCta" && !el.classList.contains("is-claim")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      DOWNLOAD_CONFIG.start();
+    }, true);
 
     /* 8 realistic cash wedges — ₹95 sits naturally at index 3 */
     const PRIZES = [
@@ -1148,8 +1167,11 @@
       mainCta.disabled = false;
       hubBtn.disabled = false;
       hubBtn.textContent = "WIN";
+      hubBtn.setAttribute("data-download", "true");
+      hubBtn.setAttribute("data-action", "claim");
       mainCta.textContent = "INSTALL APP & CLAIM \u20B995";
       mainCta.classList.add("is-claim");
+      mainCta.setAttribute("data-download", "true");
       burstFX();
       openModal();
     }
@@ -1158,10 +1180,6 @@
     function openModal() { modal.classList.add("is-open"); }
     function closeModal() { modal.classList.remove("is-open"); }
     document.getElementById("modalClose").addEventListener("click", closeModal);
-    document.getElementById("modalHotspot").addEventListener("click", (e) => {
-      e.stopPropagation();
-      DOWNLOAD_CONFIG.start();
-    });
     modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
     /* Confetti / coins */
